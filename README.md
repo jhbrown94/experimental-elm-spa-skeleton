@@ -1,6 +1,6 @@
 # Experimental Elm SPA skeleton
 
-This is an experimental approach to implementing an SPA in (pure) Elm.   My principal goal was to let pages be self-contained.
+This is an experimental approach to implementing an SPA in (pure) Elm.   My principal goal was to let pages be self-contained.  If you like it, you can copy it and use it as a baseline for your own SPA, it's pretty straightforward.
 
 It's a work in progress.  If it's interesting to you, please let me know.  If there's enthusiasm for this project, I'll do a lot more documenting and general cleanup and usability improvements.  (E.g. I've written this README, but I haven't documented the individual files yet, and probably won't if there isn't at least some external interest.)
 

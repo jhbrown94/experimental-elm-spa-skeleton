@@ -27,9 +27,8 @@ import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
 import Element.Input as Input
-import Model
-import Msg
 import Route
+import Session
 
 
 appName =
@@ -51,16 +50,16 @@ dialogPage rest =
             )
 
 
-aboutButton =
-    button [] { onPress = Just <| Msg.Main <| Msg.PushRoute Route.About, label = text "About" }
+aboutButton msg =
+    button [] { onPress = Just msg, label = text "About" }
 
 
-logoutButton model =
-    if Model.session model == Nothing then
+logoutButton msg session =
+    if session.authToken == Nothing then
         Element.none
 
     else
-        button [] { onPress = Just <| Msg.Main <| Msg.Logout, label = text "Log out" }
+        button [] { onPress = Just msg, label = text "Log out" }
 
 
 window attributes =

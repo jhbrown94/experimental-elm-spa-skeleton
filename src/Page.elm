@@ -5,223 +5,80 @@
 -- You may obtain a copy of the License at https://opensource.org/licenses/MIT
 
 
-module Page exposing
-    ( DataNoSession
-    , DataWithOptionalSession
-    , DataWithSession
-    , Page
-    , UpdateNoSession
-    , UpdateWithOptionalSession
-    , UpdateWithSession
-    , ViewNoSession
-    , ViewWithOptionalSession
-    , ViewWithSession
-    , session
-    , title
-    , update
-    , updateNoSession
-    , updateWithOptionalSession
-    , updateWithSession
-    , view
-    , withNoSession
-    , withOptionalSession
-    , withSession
+module Page exposing (Descriptor, Model, init, update, view)
+
+import Browser exposing (Document)
+import Browser.Navigation as Navigation
+import Html
+import Route exposing (NavState)
+import Session exposing (Session)
+import Url
+
+
+type Model mainmsg
+    = Model
+        { view : Session -> Browser.Document mainmsg
+        , update : mainmsg -> Session -> ( Session, Model mainmsg, Cmd mainmsg )
+        }
+
+
+view : Session -> Model mainmsg -> Browser.Document mainmsg
+view session (Model model) =
+    model.view session
+
+
+update : mainmsg -> Session -> Model mainmsg -> ( Session, Model mainmsg, Cmd mainmsg )
+update msg session (Model model) =
+    model.update msg session
+
+
+type alias Descriptor mainmsg msg model =
+    { view : Session -> model -> Document msg
+    , update : msg -> Session -> model -> ( Session, model, Cmd msg )
+    , msgWrapper : msg -> mainmsg
+    , msgFilter : mainmsg -> Maybe msg
+    }
+
+
+init : Descriptor mainmsg msg model -> ( Session, model, Cmd msg ) -> ( Session, Model mainmsg, Cmd mainmsg )
+init descriptor ( session, pageModel, cmd ) =
+    ( session
+    , buildModel descriptor pageModel
+    , Cmd.map descriptor.msgWrapper cmd
     )
 
-import Html exposing (Html)
 
-
-
--- Page
-
-
-type alias PageRep session msg model =
-    { view : ViewFn msg model
-    , update : UpdateFn msg model
-    , title : String
-    , session : Maybe session
-    }
-
-
-type Page session msg model
-    = Page (PageRep session msg model)
-
-
-type alias ViewFn msg model =
-    model -> Html msg
-
-
-type alias UpdateFn msg model =
-    msg -> model -> ( model, Cmd msg )
-
-
-view (Page rep) =
-    rep.view
-
-
-update (Page rep) =
-    rep.update
-
-
-title (Page rep) =
-    rep.title
-
-
-session (Page rep) =
-    rep.session
-
-
-
--- Building pages
-
-
-type WithSession session state msg model
-    = WithSession (RepWithSession session state msg model)
-
-
-type WithOptionalSession session state msg model
-    = WithOptionalSession (RepWithOptionalSession session state msg model)
-
-
-type WithNoSession state msg model
-    = WithNoSession (RepNoSession state msg model)
-
-
-type alias RepNoSession state msg model =
-    { data : DataNoSession state
-    , view : ViewNoSession state msg model
-    , update : UpdateNoSession state msg model
-    }
-
-
-type alias RepWithSession session state msg model =
-    { data : DataWithSession session state
-    , view : ViewWithSession session state msg model
-    , update : UpdateWithSession session state msg model
-    }
-
-
-type alias RepWithOptionalSession session state msg model =
-    { data : DataWithOptionalSession session state
-    , view : ViewWithOptionalSession session state msg model
-    , update : UpdateWithOptionalSession session state msg model
-    }
-
-
-type alias DataNoSession state =
-    { state : state
-    , title : String
-    }
-
-
-type alias DataWithSession session state =
-    { session : session
-    , state : state
-    , title : String
-    }
-
-
-type alias DataWithOptionalSession session state =
-    DataWithSession (Maybe session) state
-
-
-type alias ViewNoSession state msg model =
-    DataNoSession state -> ViewFn msg model
-
-
-type alias ViewWithSession session state msg model =
-    DataWithSession session state -> ViewFn msg model
-
-
-type alias ViewWithOptionalSession session state msg model =
-    DataWithOptionalSession session state -> ViewFn msg model
-
-
-type alias UpdateNoSession state msg model =
-    WithNoSession state msg model -> DataNoSession state -> UpdateFn msg model
-
-
-type alias UpdateWithSession session state msg model =
-    WithSession session state msg model -> DataWithSession session state -> UpdateFn msg model
-
-
-type alias UpdateWithOptionalSession session state msg model =
-    WithOptionalSession session state msg model -> DataWithOptionalSession session state -> UpdateFn msg model
-
-
-withNoSession :
-    ViewNoSession state msg model
-    -> UpdateNoSession state msg model
-    -> DataNoSession state
-    -> Page session msg model
-withNoSession viewFn updateFn data =
+buildModel : Descriptor mainmsg msg model -> model -> Model mainmsg
+buildModel descriptor newModel =
     let
-        builder =
-            WithNoSession
-                { data = data
-                , view = viewFn
-                , update = updateFn
-                }
+        buildView : Session -> Document mainmsg
+        buildView =
+            \session ->
+                let
+                    { title, body } =
+                        descriptor.view session newModel
+                in
+                { title = title, body = List.map (Html.map descriptor.msgWrapper) body }
+
+        buildUpdate : mainmsg -> Session -> ( Session, Model mainmsg, Cmd mainmsg )
+        buildUpdate =
+            newUpdate descriptor newModel
     in
-    Page <|
-        { session = Nothing
-        , title = data.title
-        , view = viewFn data
-        , update = updateFn builder data
+    Model
+        { view = buildView
+        , update = buildUpdate
         }
 
 
-withSession :
-    ViewWithSession session state msg model
-    -> UpdateWithSession session state msg model
-    -> DataWithSession session state
-    -> Page session msg model
-withSession viewFn updateFn data =
-    let
-        builder =
-            WithSession
-                { data = data
-                , view = viewFn
-                , update = updateFn
-                }
-    in
-    Page <|
-        { view = viewFn data
-        , update = updateFn builder data
-        , title = data.title
-        , session = Just data.session
-        }
+newUpdate : Descriptor mainmsg msg model -> model -> mainmsg -> Session -> ( Session, Model mainmsg, Cmd mainmsg )
+newUpdate descriptor oldModel mainMsg oldSession =
+    case descriptor.msgFilter mainMsg of
+        Just msg ->
+            let
+                ( newSession, newModel, cmd ) =
+                    descriptor.update msg oldSession oldModel
+            in
+            ( newSession, buildModel descriptor newModel, Cmd.map descriptor.msgWrapper cmd )
 
-
-withOptionalSession :
-    ViewWithOptionalSession session state msg model
-    -> UpdateWithOptionalSession session state msg model
-    -> DataWithOptionalSession session state
-    -> Page session msg model
-withOptionalSession viewFn updateFn data =
-    let
-        builder =
-            WithOptionalSession
-                { data = data
-                , view = viewFn
-                , update = updateFn
-                }
-    in
-    Page <|
-        { view = viewFn data
-        , update = updateFn builder data
-        , title = data.title
-        , session = data.session
-        }
-
-
-updateNoSession nextData (WithNoSession oldRep) =
-    withNoSession oldRep.view oldRep.update nextData
-
-
-updateWithOptionalSession nextData (WithOptionalSession oldRep) =
-    withOptionalSession oldRep.view oldRep.update nextData
-
-
-updateWithSession nextData (WithSession oldRep) =
-    withSession oldRep.view oldRep.update nextData
+        Nothing ->
+            ( oldSession, buildModel descriptor oldModel, Cmd.none )

@@ -7,7 +7,11 @@
 
 module Session exposing (Session)
 
+import Json.Decode exposing (Value)
+import Route exposing (NavState)
+
 
 type alias Session =
-    { username : String
+    { nav : NavState
+    , authToken : Maybe String
     }

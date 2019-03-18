@@ -5,48 +5,20 @@
 -- You may obtain a copy of the License at https://opensource.org/licenses/MIT
 
 
-module Model exposing (Model, new, page, session, setPage, updatePageInPlace)
+module Model exposing (Model, wrapPage)
 
-import Browser.Navigation
-import Msg exposing (Msg)
-import Page exposing (Page)
+import Msg exposing (Msg(..))
+import Page
+import PageMsg exposing (PageMsg)
+import Route exposing (NavState)
 import Session exposing (Session)
-import Url
-import Url.Builder
 
 
 type alias Model =
-    { key : Browser.Navigation.Key
-    , url : Url.Url
-    , page : ModelPage
+    { session : Session
+    , page : Page.Model PageMsg
     }
 
 
-new options =
-    Model options.key options.url (ModelPage options.page)
-
-
-type ModelPage
-    = ModelPage (Page.Page Session Msg Model)
-
-
-page model =
-    let
-        (ModelPage thePage) =
-            model.page
-    in
-    thePage
-
-
-session model =
-    Page.session <| page model
-
-
-setPage : Url.Url -> Page Session Msg Model -> Model -> Model
-setPage url thePage model =
-    { model | url = url, page = ModelPage thePage }
-
-
-updatePageInPlace : Page.Page Session Msg Model -> Model -> Model
-updatePageInPlace updatedPage model =
-    { model | page = ModelPage updatedPage }
+wrapPage nav ( session, pageModel, cmd ) =
+    ( Model session pageModel, Cmd.map Page cmd )

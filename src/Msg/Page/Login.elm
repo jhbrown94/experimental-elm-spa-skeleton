@@ -6,10 +6,3 @@
 
 
 module Msg.Page.Login exposing (Msg(..))
-
-
-type Msg
-    = UsernameChanged String
-      --| PasswordChanged String
-    | LoginPressed
-    | CancelPressed

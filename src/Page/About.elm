@@ -5,7 +5,7 @@
 -- You may obtain a copy of the License at https://opensource.org/licenses/MIT
 
 
-module Page.About exposing (init)
+module Page.About exposing (Model, Msg, init, update, view)
 
 import Element
     exposing
@@ -13,30 +13,34 @@ import Element
         , text
         , wrappedRow
         )
-import Msg exposing (Msg(..))
-import Page
 import Route
+import Session exposing (Session)
 import ViewHelpers exposing (..)
 
 
+type alias Model =
+    ()
+
+
+type alias Msg =
+    ()
+
+
+init : Session -> ( Session, Model, Cmd Msg )
 init session =
-    ( Page.withOptionalSession
-        view
-        update
-        { title = pageTitle "About"
-        , session = session
-        , state = ()
-        }
-    , Cmd.none
-    )
+    ( session, (), Cmd.none )
 
 
-view data model =
-    dialogPage <|
-        wrappedRow
-            [ spacing 10 ]
-            [ text "This page is all about this app" ]
+view session model =
+    { title = "About"
+    , body =
+        [ dialogPage <|
+            wrappedRow
+                [ spacing 10 ]
+                [ text "This page is all about this app" ]
+        ]
+    }
 
 
-update builder data msg model =
-    ( model, Cmd.none )
+update msg session model =
+    ( session, model, Cmd.none )

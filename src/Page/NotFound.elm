@@ -5,40 +5,50 @@
 -- You may obtain a copy of the License at https://opensource.org/licenses/MIT
 
 
-module Page.NotFound exposing (init)
+module Page.NotFound exposing (Model, Msg, init, update, view)
 
+import Browser exposing (Document)
 import Element
     exposing
         ( column
         , spacing
         , text
         )
-import Msg
-import Page
 import Route
+import Session exposing (Session)
 import ViewHelpers exposing (..)
 
 
-init session notFoundUrl =
-    ( Page.withOptionalSession view
-        update
-        { title = pageTitle "Not found"
-        , session = session
-        , state = { url = notFoundUrl }
-        }
-    , Cmd.none
-    )
+type alias Model =
+    { notFoundUrl : String }
 
 
-view data model =
-    dialogPage <|
-        column
-            [ spacing 10 ]
-            [ text "URL not found:"
-            , text data.state.url
-            , button [] { onPress = Just <| Msg.Main <| Msg.PushRoute Route.Root, label = text "Go to home" }
-            ]
+type Msg
+    = HomePressed
 
 
-update builder data msg model =
-    ( model, Cmd.none )
+init : String -> Session -> ( Session, Model, Cmd Msg )
+init notFoundUrl session =
+    ( session, { notFoundUrl = notFoundUrl }, Cmd.none )
+
+
+view : Session -> Model -> Document Msg
+view session model =
+    { title = "Not found"
+    , body =
+        [ dialogPage <|
+            column
+                [ spacing 10 ]
+                [ text "URL not found:"
+                , text model.notFoundUrl
+                , button [] { onPress = Just HomePressed, label = text "Go to home" }
+                ]
+        ]
+    }
+
+
+update : Msg -> Session -> Model -> ( Session, Model, Cmd Msg )
+update msg session model =
+    case msg of
+        HomePressed ->
+            ( session, model, Route.push Route.Root session.nav )

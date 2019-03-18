@@ -5,77 +5,83 @@
 -- You may obtain a copy of the License at https://opensource.org/licenses/MIT
 
 
-module Router exposing (onUrlChange, pushRoute)
+module Router exposing (route)
 
-import Browser.Navigation as Navigation
-import Model exposing (Model)
+import Descriptors exposing (..)
+import Model exposing (Model, wrapPage)
 import Msg exposing (Msg)
-import Page exposing (Page)
-import Page.About
-import Page.Landing
-import Page.Login
-import Page.Logout
-import Page.NotFound
-import Page.Primary
-import Page.Secondary
+import Page
+import Page.About as About
+import Page.Landing as Landing
+import Page.Login as Login
+import Page.Logout as Logout
+import Page.NotFound as NotFound
+import Page.Primary as Primary
+import Page.Secondary as Secondary
+import PageMsg exposing (..)
 import Route exposing (..)
-import Session exposing (Session)
 import Url exposing (Url)
 
 
-handlerFor url route model =
-    case ( route, Model.session model ) of
-        -- Special routing case: "/" goes to Landing or Primary depending on Session state
-        ( Root, Just s ) ->
-            Normal <| Page.Primary.init s
-
-        ( Root, Nothing ) ->
-            Normal <| Page.Landing.init
-
-        ( Login success, s ) ->
-            Normal <| Page.Login.init s success model
-
-        ( Logout, _ ) ->
-            Normal <| Page.Logout.init
-
-        ( NotFound urlString, s ) ->
-            Normal <| Page.NotFound.init s urlString
-
-        -- Normal session required pages
-        ( Secondary, Just s ) ->
-            Normal <| Page.Secondary.init s
-
-        -- Normal session-not-required pages
-        ( About, s ) ->
-            Normal <| Page.About.init s
-
-        -- Catch-all to redirect session-required pages to Login if no session is present
-        ( _, Nothing ) ->
-            Redirect <| Login (Just url)
+setNav newValue record =
+    { record | nav = newValue }
 
 
-onUrlChange : Url -> Model -> ( Model, Cmd Msg )
-onUrlChange url model =
+setUrl newValue record =
+    { record | url = newValue }
+
+
+route : Url -> Model -> ( Model, Cmd Msg )
+route url ({ session, page } as model) =
     let
-        nominalRoute =
-            urlToRoute url
+        nominalDestination =
+            Route.parseUrl url
 
-        handler =
-            handlerFor url nominalRoute model
+        newSession =
+            session |> setNav (session.nav |> setUrl url)
+
+        newPage descriptor generator =
+            newSession
+                |> generator
+                |> Page.init descriptor
+                |> wrapPage newSession
+
+        byDestination destination =
+            case ( destination, session.authToken ) of
+                ( Root, Nothing ) ->
+                    newPage landingDescriptor Landing.init
+
+                ( Root, Just _ ) ->
+                    newPage primaryDescriptor Primary.init
+
+                ( About, _ ) ->
+                    newPage aboutDescriptor About.init
+
+                ( NotFound _, _ ) ->
+                    newPage notFoundDescriptor (NotFound.init (Url.toString url))
+
+                ( Logout, _ ) ->
+                    newPage logoutDescriptor Logout.init
+
+                ( Secondary, Just _ ) ->
+                    newPage secondaryDescriptor Secondary.init
+
+                ( Login successUrl, Nothing ) ->
+                    newPage loginDescriptor <| Login.init successUrl
+
+                ( Login Nothing, Just _ ) ->
+                    newPage primaryDescriptor Primary.init
+
+                ( Login (Just urlString), Just _ ) ->
+                    case urlString |> Url.fromString of
+                        Just successUrl ->
+                            route successUrl model
+
+                        Nothing ->
+                            newPage primaryDescriptor Primary.init
+
+                -- Catch-all to redirect session-required pages to Login if no session is present
+                ( _, Nothing ) ->
+                    newPage loginDescriptor <| Login.init (Just (Url.toString url))
     in
-    case handler of
-        Normal ( page, cmd ) ->
-            ( Model.setPage url page model, cmd )
-
-        Redirect route ->
-            ( model, Navigation.replaceUrl model.key (routeToUrlString route) )
-
-
-pushRoute : Route -> Model -> ( Model, Cmd msg )
-pushRoute route model =
-    ( model, Navigation.pushUrl model.key (routeToUrlString route) )
-
-
-type Handler
-    = Normal ( Page Session Msg Model, Cmd Msg )
-    | Redirect Route
+    byDestination nominalDestination

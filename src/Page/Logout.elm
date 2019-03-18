@@ -5,34 +5,49 @@
 -- You may obtain a copy of the License at https://opensource.org/licenses/MIT
 
 
-module Page.Logout exposing (init)
+module Page.Logout exposing (Model, Msg, init, update, view)
 
+import Browser exposing (Document)
 import Element
     exposing
         ( spacing
         , text
         , wrappedRow
         )
-import Msg exposing (Msg(..))
-import Page
 import Route
+import Session exposing (Session)
 import ViewHelpers exposing (..)
 
 
-init =
-    ( Page.withNoSession view update { title = pageTitle "Logout", state = () }
-    , Cmd.none
-    )
+type alias Model =
+    ()
 
 
-view data model =
-    dialogPage <|
-        wrappedRow
-            [ spacing 10 ]
-            [ text "You have logged out"
-            , button [] { onPress = Just <| Msg.Main <| Msg.PushRoute Route.Root, label = text "Return home" }
-            ]
+type Msg
+    = HomePressed
 
 
-update builder data msg model =
-    ( model, Cmd.none )
+init : Session -> ( Session, Model, Cmd Msg )
+init session =
+    ( { session | authToken = Nothing }, (), Cmd.none )
+
+
+view : Session -> Model -> Document Msg
+view session model =
+    { title = "Log out"
+    , body =
+        [ dialogPage <|
+            wrappedRow
+                [ spacing 10 ]
+                [ text "You have logged out"
+                , button [] { onPress = Just HomePressed, label = text "Return home" }
+                ]
+        ]
+    }
+
+
+update : Msg -> Session -> Model -> ( Session, Model, Cmd Msg )
+update msg session model =
+    case msg of
+        HomePressed ->
+            ( session, model, Route.push Route.Root session.nav )

@@ -5,38 +5,65 @@
 -- You may obtain a copy of the License at https://opensource.org/licenses/MIT
 
 
-module Page.Secondary exposing (init)
+module Page.Secondary exposing (Model, Msg, init, update, view)
 
+import Browser exposing (Document)
 import Element
     exposing
         ( spacing
         , text
         , wrappedRow
         )
-import Msg exposing (Msg(..))
-import Page
 import Route
+import Session exposing (Session)
 import ViewHelpers exposing (..)
 
 
+type alias Model =
+    ()
+
+
+type Msg
+    = PrimaryPressed
+    | LoginPressed
+    | AboutPressed
+    | LogoutPressed
+
+
+init : Session -> ( Session, Model, Cmd Msg )
 init session =
-    ( Page.withSession view update { title = pageTitle "Secondary", session = session, state = () }
-    , Cmd.none
-    )
+    ( session, (), Cmd.none )
 
 
-view data model =
-    dialogPage <|
-        wrappedRow
-            [ spacing 10 ]
-            [ text "This is a secondary page"
-            , text <| "Session user's username is: " ++ data.session.username
-            , button [] { onPress = Just <| Msg.Main <| Msg.PushRoute Route.Root, label = text "Primary" }
-            , aboutButton
-            , logoutButton model
-            , button [] { onPress = Just <| Msg.Main <| Msg.PushRoute (Route.Login Nothing), label = text "Log in - inappropriately" }
-            ]
+view : Session -> Model -> Document Msg
+view session model =
+    { title = "Secondary"
+    , body =
+        [ dialogPage <|
+            wrappedRow
+                [ spacing 10 ]
+                [ text "This is a secondary page"
+                , text <| "Session user's authtoken is: " ++ Debug.toString session.authToken
+                , button [] { onPress = Just PrimaryPressed, label = text "Primary" }
+                , aboutButton AboutPressed
+                , logoutButton LogoutPressed session
+                , button [] { onPress = Just LoginPressed, label = text "Log in - inappropriately" }
+                ]
+        ]
+    }
 
 
-update builder data msg model =
-    ( model, Cmd.none )
+update : Msg -> Session -> Model -> ( Session, Model, Cmd Msg )
+update msg session model =
+    case msg of
+        PrimaryPressed ->
+            ( session, model, Route.push Route.Root session.nav )
+
+        LoginPressed ->
+            ( session, model, Route.push (Route.Login Nothing) session.nav )
+
+        LogoutPressed ->
+            ( session, model, Route.push Route.Logout session.nav )
+
+        AboutPressed ->
+            ( session, model, Route.push Route.About session.nav )

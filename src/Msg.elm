@@ -5,22 +5,15 @@
 -- You may obtain a copy of the License at https://opensource.org/licenses/MIT
 
 
-module Msg exposing (MainMsg(..), Msg(..))
+module Msg exposing (Msg(..))
 
 import Browser exposing (UrlRequest)
-import Msg.Page.Login as Login
-import Route exposing (Route)
+import PageMsg exposing (PageMsg)
 import Url exposing (Url)
 
 
 type Msg
-    = Main MainMsg
-    | Login Login.Msg
-
-
-type MainMsg
     = NoEvent
-    | Logout
-    | PushRoute Route
-    | UrlChanged Url
     | UrlRequested UrlRequest
+    | UrlChanged Url
+    | Page PageMsg

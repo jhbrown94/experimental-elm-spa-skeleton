@@ -5,41 +5,60 @@
 -- You may obtain a copy of the License at https://opensource.org/licenses/MIT
 
 
-module Page.Primary exposing (init)
+module Page.Primary exposing (Model, Msg, init, update, view)
 
+import Browser exposing (Document)
 import Element
     exposing
         ( column
         , spacing
         , text
         )
-import Model exposing (Model)
-import Msg exposing (Msg)
-import Page exposing (Page)
 import Route
 import Session exposing (Session)
 import ViewHelpers exposing (..)
 
 
-init : Session -> ( Page Session Msg Model, Cmd Msg.Msg )
+type alias Model =
+    ()
+
+
+type Msg
+    = LogoutPressed
+    | AboutPressed
+    | SecondaryPressed
+
+
+init : Session -> ( Session, Model, Cmd Msg )
 init session =
-    ( Page.withSession view update { title = pageTitle "Primary", session = session, state = () }
-    , Cmd.none
-    )
+    ( session, (), Cmd.none )
 
 
-view : Page.ViewWithSession Session () Msg Model
-view data model =
-    dialogPage <|
-        column
-            [ spacing 10 ]
-            [ text <| "Session user's username is: " ++ data.session.username
-            , text "This is a primary page"
-            , button [] { onPress = Just <| Msg.Main <| Msg.PushRoute Route.Secondary, label = text "Secondary" }
-            , aboutButton
-            , logoutButton model
-            ]
+view : Session -> Model -> Document Msg
+view session model =
+    { title = "Primary"
+    , body =
+        [ dialogPage <|
+            column
+                [ spacing 10 ]
+                [ text <| "Auth token is: " ++ Debug.toString session.authToken
+                , text "This is a primary page"
+                , button [] { onPress = Just SecondaryPressed, label = text "Secondary" }
+                , aboutButton AboutPressed
+                , logoutButton LogoutPressed session
+                ]
+        ]
+    }
 
 
-update builder data msg model =
-    ( model, Cmd.none )
+update : Msg -> Session -> Model -> ( Session, Model, Cmd Msg )
+update msg session model =
+    case msg of
+        LogoutPressed ->
+            ( session, model, Route.push Route.Logout session.nav )
+
+        AboutPressed ->
+            ( session, model, Route.push Route.About session.nav )
+
+        SecondaryPressed ->
+            ( session, model, Route.push Route.Secondary session.nav )

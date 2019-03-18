@@ -6,6 +6,14 @@ It's a work in progress.  If it's interesting to you, please let me know.  If th
 
 Something not to worry about:  I've used `elm-ui` for the `view` functions in the skeleton.  There's no fundamental dependency on `elm-ui`; you can use `html` or whatever else you want to generate views.  I just like `elm-ui` a lot better than the alternatives.
 
+## Major influences
+
+This skeleton is particularly influenced by these Elm codebases:
+
+* [RealWorld example app (AKA elm-spa-example)](https://github.com/rtfeldman/elm-spa-example)
+* [package.elm-lang.org](https://github.com/elm/package.elm-lang.org)
+* [Elm Shared State example](https://github.com/ohanhi/elm-shared-state)
+
 
 ## Install and run the skeleton
 
@@ -112,7 +120,7 @@ Let's say we want to add a new page type `Email`:
            ...
            ]
    ```
-   
+
 5. Edit `Router.elm` to add an import for the new page, and one or more clauses to the `route` function describing how to handle the `Destination` to that page based on session state (typically, authentication):
    ```
    import Page.Email as Email
@@ -144,8 +152,12 @@ A `Destination` (from `Route.elm` is essentially a validated route within the SP
 
 The dispatcher in `Router.elm` selects which page to go to based on both a `Destination` and any conditions you want to impose on the shared `Session`; the version here looks at whether authentication has taken place, but there's nothing that prevents you from doing something else.
 
+## Refactoring an existing SPA into this style
+
+It is possible to refactor an existing SPA into this style.  Add this kind of wrapped page as a single page, and then migrate individual pages into this style and out of your `Main.elm` case statements.
+
 ## What's missing or broken
 
-If a Page needs to be able to invoke global operations, it can store a request in the `Session` that `Main.elm` could look at after calling the page's `update`.  There's no example of that in here (yet), though.
+If a Page needs to be able to invoke global operations, it can store a request in the `Session` that `Main.elm` could look at after calling the page's `update`.  There's no example of that in here (yet), though. )
 
 Bug:  If you try to reach an authenticated page without auth, you'll get sent to Login, and thereafter redirected to the page.  The current router leaves the URL at '/login', though.  It is on my queue to work this.

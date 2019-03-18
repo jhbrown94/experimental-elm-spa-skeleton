@@ -54,6 +54,7 @@ Let's say we want to add a new page type `Email`:
          YourFirstMessage -> your handler here
          ...
    ```
+
   Note: To standardize some of the other boilerplate, even if you don't need a `Model` or `Msg`, define them as aliases of `()`, e.g. `type alias Model = ()`.
 
 2. Edit `PageMsg.elm` to add an import and a `PageMsg` constructor for `Page.Email` messages:
@@ -90,9 +91,6 @@ Let's say we want to add a new page type `Email`:
        }
    ```
 
-   1. Create `src/Msg/Page/Email.elm` for messages specific to the page
-   2. Edit `src/Msg.elm` to import the new file and add an `Email` wrapper type to `Msg`
-
 4. Edit `Route.elm` to add a Destination for the new page, and to handle converting between URLs and the destination:
    ```
    type Destination
@@ -114,6 +112,7 @@ Let's say we want to add a new page type `Email`:
            ...
            ]
    ```
+   
 5. Edit `Router.elm` to add an import for the new page, and one or more clauses to the `route` function describing how to handle the `Destination` to that page based on session state (typically, authentication):
    ```
    import Page.Email as Email

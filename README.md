@@ -140,15 +140,15 @@ Let's say we want to add a new page type `Email`:
 
 ## Key concepts
 
-Each page is entirely self-contained with no reference to the global hierarchy of pages.
+Each page is entirely self-contained with no reference to the global hierarchy of pages.  They are linked by `Destination`s (from `Route.elm`)
 
-A shared `Session` type enables pages to share state across page changes.
+A `Destination`  is essentially a validated route within the SPA.  `Route.elm` doesn't contain references to the global page hierarchy.
+
+A shared `Session` type enables pages to share state across page changes.  `Session.elm` doesn't contain references to the global page hierarchy.
 
 A Page's `init`, `update`, and `view` functions operate in terms of the Page's local `Model` and `Msg` types, and also receive a shared `Session`; update also returns the (optionally modified) `Session`.
 
 A Page's `Descriptor` hides the page-specific `Model` and `Msg` types behind closures, thus providing a uniform interface for `Main.elm`'s `update` and `view` functions.
-
-A `Destination` (from `Route.elm` is essentially a validated route within the SPA.)
 
 The dispatcher in `Router.elm` selects which page to go to based on both a `Destination` and any conditions you want to impose on the shared `Session`; the version here looks at whether authentication has taken place, but there's nothing that prevents you from doing something else.
 

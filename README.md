@@ -6,6 +6,7 @@ It's a work in progress.  If it's interesting to you, please let me know.  If th
 
 Something not to worry about:  I've used `elm-ui` for the `view` functions in the skeleton.  There's no fundamental dependency on `elm-ui`; you can use `html` or whatever else you want to generate views.  I just like `elm-ui` a lot better than the alternatives.
 
+
 ## Install and run the skeleton
 
 This isn't packaged as an Elm package, so use `git clone` to get this repo.  
@@ -14,246 +15,138 @@ You can run it with `elm reactor` -- navigate to `src/Main.elm`.  Because the re
 
 To compile this yourself, run `elm make src/Main.elm`.   If you host it on a webserver and redirect all URLs to the app, you can play with how it responds to hand-typed URLs. (Note that there's no session persistence, so you'll have to "log in" after every browser page load.)
 
-## Key concepts
 
-The basic idea is to have each page in the SPA encapsulate its data using partial application.  Partially-applied page-specific `view` and `update` functions are then encapsulated (along with additional information) in a uniform `Page` opaque type.  This means that adding a new page does not require touching the top-level `view` and `update` functions.  Page data is comprised of the page's title (as seen in the browser tab); any page-specific state; and optionally a session type which is shared accross all pages.  Pages are interconnected with routes, which also support direct access by URL.
+## Example: Adding a page
 
-To adapt the skeleton to your uses, probably the three types to think about first are `Page`, `Session`, and `Route`.
-
-### `Session`
-
-`Session` is a type shared by all `Page`s that refer to sessions in the SPA.  `Session` is defined in `src/Session.elm`.  What you store in a Session is completely configurable.  In the skeleton, the presence of a session indicates whether or not the user has logged in, but you could do something very different with it. 
-
-### `Route` and `Router`
-
-#### `Route`
-`src/Route.elm` defines `Route`, a union type providing a mapping with of valid URLs into the SPA.  Here are key fragments from the skeleton:
-```
-type Route
-    = Root
-    | NotFound String
-    | Login (Maybe Url)
-    ...
-    | About
-```
-
-The `Route` union defines all legitimate URL structures.
-
-```
-routeParser =
-    oneOf
-        [ map Root top
-        , map loginParserHelper (s loginSegment <?> Query.string loginSuccessKey)
-        ...
-        , map About (s aboutSegment)
-        ]
-```
-The `routeParser` function uses `Url.Parser` to parse a `Url` into a `Route`.  Note the use of a helper function (not shown here) for `Login` -- the helper handles the case in which `loginSuccessKey` is not a valid URL.
-
-```
-routeToUrlString : Route -> String
-routeToUrlString route =
-    case route of
-        Root ->
-            absolute [] []
-
-        Login (Just successUrl) ->
-            absolute [ loginSegment ] [ Builder.string loginSuccessKey (Url.toString successUrl) ]
-
-        Login Nothing ->
-            absolute [ loginSegment ] []
-```
-
-`routeToUrlString` converts a `Route` into a string representation of a URL, suitable for handing to (e.g.) `Browser.Navigation.pushUrl`
-
-#### `Router`
-`src/Router.elm` glues `Route`s together with `Page`s.  Which `Page` is selected for a route may depend on the availability of a `Session`.  Here's the key function in its entirety:
-```
-handlerFor url route model =
-    case ( route, Model.session model ) of
-        -- Special routing case: "/" goes to Landing or Primary depending on Session state
-        ( Root, Just s ) ->
-            Normal <| Page.Primary.init s
-
-        ( Root, Nothing ) ->
-            Normal <| Page.Landing.init
-
-        ( Login success, s ) ->
-            Normal <| Page.Login.init s success model
-
-        ( Logout, _ ) ->
-            Normal <| Page.Logout.init
-
-        ( NotFound urlString, s ) ->
-            Normal <| Page.NotFound.init s urlString
-
-        -- Normal session required pages
-        ( Secondary, Just s ) ->
-            Normal <| Page.Secondary.init s
-
-        -- Normal session-not-required pages
-        ( About, s ) ->
-            Normal <| Page.About.init s
-
-        -- Catch-all to redirect session-required pages to Login if no session is present
-        ( _, Nothing ) ->
-            Redirect <| Login (Just url)
-```
-
-
-### `Page`
-
-`Page msg model` is an opaque type representing pages in the SPA.  Each SPA page is implemented in a file in `src/Page/`.    A really simple "About my app" page implementation might look something like this:
-
-```
-module Page.About exposing (init)
-
-import Page
-import <stuff for the view>
-
-
-init session =
-    ( Page.withOptionalSession
-        view
-        update
-        { title = "MyApp: About"
-        , session = session
-        , state = ()
-        }
-    , Cmd.none
-    )
-
-
-view data model =
-    stuffForTheView model "This page is all about this app"
-
-
-update builder data msg model =
-    ( model, Cmd.none )
-```
-
-The first thing to notice is that the only export is `init`.  `init` can take arbitrary arguments, as explained below in `Route`.  It must return a `(Page msg model, Cmd msg)` tuple.   Within init, for this simple example we construct the `Page` when we call `Page.withOptionalSession`.  
-
-`withOptionalSession` takes three arguments:
-1. a `view` function which accepts a `Page.DataWithOptionalSession session state` record, and a `model`; and returns a tuple `(Page msg model, Cmd msg)`
-2. an `update` function which accepts an opaque builder value, a `Page.DataWithOptionalSession session state` value, and a `model`; and returns a tuple `(Page msg model, Cmd msg)`
-3. a `Page.DataWithOptionalSession session state` record.  Digging in, this contains:
-  - a title `String`
-  - a `Maybe session`.  `session` will generally get specialized as `Session`.
-  - page-specific `state.  This is the page-local state.  For this example, the page has no state.
-
-Other page creation options are `Page.withSession`, in which the `data.session` field is of type `session` instead of `Maybe session`; and `Page.withNoSession`, in which `data` does not have a `session` field.  For the About page, we choose `withOptionalSession` because don't care if the user has logged in or not to view this page, but if they do have a `session` we want to preserve it.
-
-#### Page-local state
-
-The About page above doesn't need local state, so `state` is just `()`.  In a Login page with a couple of text inputs, `state` might be something like this:
-```
-module Page.Login exposing (init)
-...
-type alias State =
-    { username : String
-    , password : String
-    , successUrlString : String
-    }
-...
-```
-
-
-#### Page-specific messages
-
-The About page didn't do much of anything, so it didn't need its own messages.  The Login page, however, needs to update its state when users type.  To do that, page-specific messages are defined in `src/Msg/Page/Login.elm`:
-```
-module Msg.Page.Login exposing (Msg(..))
-
-
-type Msg
-    = UsernameChanged String
-    | PasswordChanged String
-    | LoginPressed
-    | CancelPressed
-```
-
-These messages are pulled into the global message type by adding a wrapper constructor in `src/Msg.elm`:
-```
-module Msg exposing (MainMsg(..), Msg(..))
-...
-import Msg.Page.Login as Login 
-...
-
-
-type Msg
-    = Main MainMsg
-    | Login Login.Msg   -- This is the new wrapper created for Login messages
-...
-```
-
-To see how messages are used, we turn to the `view` function.
-
-#### The `view` function
-Here's a fragment of a Login-page view function:
-```
-view : Page.ViewWithOptionalSession Session State Msg.Msg Model
-view data model =
-   ... 
-            Input.username []
-                { text = data.state.username
-                , onChange = Msg.Login << UsernameChanged
-                ...
-                }
-```
-
-The input's `text` value is set from the login-page-specific `data.state` record.  When `onChange` fires, it wraps the string result with `Msg.Page.UsernameChanged`, and further wraps that with `Msg.Login`, which makes the return type of this page's `view` function consistent with all other pages'.
-
-Another fragment of a view might include a button (could be a link instead) to go to the about page:
-```
-view data model =
-   ...
-                button [] { onPress = Just <| Msg.Main <| Msg.PushRoute Route.About, label = text "About" }
-
-```
-
-`Msg.PushRoute` is a `MainMsg` routing message that takes a `Route` and attempts to apply it.  `Msg.Main` wraps it to turn it into a `Msg.Msg` so that the central `update` function knows how to dispatch it.
-
-#### The `update` function
-
-Here's a fragment of a possible `update` for a login page:
-```
-update : Page.UpdateWithOptionalSession Session State Msg.Msg Model
-update builder ({ state } as oldData) msg model =
-    case msg of
-        Msg.Login loginMsg ->
-            case loginMsg of
-                UsernameChanged username ->
-                    ( model
-                        |> Model.updatePageInPlace
-                            (Page.updateWithOptionalSession { oldData | state = {state | username = username } } )
-                                builder
-                            )
-                    , Cmd.none )
-...
-                CancelPressed ->
-                    ( model, Navigation.back model.key 1 )
-
-        _ ->
-            ( model, Cmd.none )
-
-```
-Things to note:
-* The outermost `case` handles `Msg.Login` messages, and discards everything else.  This lets the compiler check that we handle all `Login` messages, while also discarding any late asynchronous messages arriving due to actions set up by prior pages.  (Note:  `Main.update` handles `Msg.MainMsg` messages directly, so they are never discarded.)
-* When the username input changes and the `UsernameChanged` message arrives, the page updates its internal state with `Page.updateWithOptionalSession`.  The arguments are a new `data` value, and the opaque `builder` object.  Under the hood, the `builder` contains references to the un-partially-evaluated `view` and `update` functions, enabling `updateWithOptionalSession` to build a new `Page` by partially-evaluating them against the new `data`.
-* `Model.updatePageInPlace` updates the page at the top level without triggering any navigation.
-* Right now, navigation-related stuff is stored visibly on `Model`.  I expect I'll make Model opaque and provide navigation operations directly on it.
-
-## Putting it all together: adding a `Page`
 Let's say we want to add a new page type `Email`:
-1. Create `src/Page/Email.elm`.  Consider starting it by copying an existing `Page` with similar properties (e.g. WithSession, WithOptionalSession, or NoSession)
-2. If the page will have its own messages:
+1. Create `src/Page/Email.elm` using this template:
+   ```
+   
+   module Page.Email exposing (Model, Msg, init, update, view)
+   
+   import Browser exposing (Document)
+   import Route
+   import Session exposing (Session)
+   [your imports here]
+   
+   type alias Model = {your model here}
+   
+   
+   type Msg
+       = YourFirstMessage
+       | ...
+   
+   
+   init : Session -> ( Session, Model, Cmd Msg )
+   init session =
+     session body here
+   
+   
+   view : Session -> Model -> Document Msg
+   view session model =
+       { title = "Landing"
+       , body =  your document body here}
+   
+   
+   update : Msg -> Session -> Model -> ( Session, Model, Cmd Msg )
+   update msg session model =
+       case msg of
+         YourFirstMessage -> your handler here
+         ...
+   ```
+  Note: To standardize some of the other boilerplate, even if you don't need a `Model` or `Msg`, define them as aliases of `()`, e.g. `type alias Model = ()`.
+
+2. Edit `PageMsg.elm` to add an import and a `PageMsg` constructor for `Page.Email` messages:
+   ```
+   ...
+   import Page.Email as Email
+
+   ...
+   type PageMsg
+       = AboutMsg About.Msg
+       ...
+       | EmailMsg Email.Msg
+   ```
+
+3. Edit `Descriptors.elm` to add an import and and entry for `Page.Email`:
+   ```
+   ...
+   import Page.Email as Email
+   ...
+
+   emailDescriptor : Descriptor PageMsg Email.Msg Email.Model
+   emailDescriptor =
+       { view = Email.view
+       , update = Email.update
+       , msgWrapper = EmailMsg
+       , msgFilter =
+           \main ->
+               case main of
+                   EmailMsg msg ->
+                       Just msg
+   
+                   _ ->
+                       Nothing
+       }
+   ```
+
    1. Create `src/Msg/Page/Email.elm` for messages specific to the page
    2. Edit `src/Msg.elm` to import the new file and add an `Email` wrapper type to `Msg`
-3. Edit `src/Route.elm` to add the new `Route` constructor; parsing logic in `routeParser`, and unparsing in `routeToUrlString`.
-4. Edit `src/Router.elm` to add the `Route`-to-`Page` cases in the `handlerFor` function.
 
-That should do it!
+4. Edit `Route.elm` to add a Destination for the new page, and to handle converting between URLs and the destination:
+   ```
+   type Destination
+       = Root
+       ...
+       | Email   
+   ...   
+
+   urlFor destination =
+       case destination of
+           Email -> "/email" 
+           ... 
+   ...
+   routeParser =
+       oneOf
+           [ map Root top
+           ...
+           , map Email (s "email"))
+           ...
+           ]
+   ```
+5. Edit `Router.elm` to add an import for the new page, and one or more clauses to the `route` function describing how to handle the `Destination` to that page based on session state (typically, authentication):
+   ```
+   import Page.Email as Email
+   ...
+   route url ({ session, page } as model) =
+       let
+           ...
+           byDestination destination =
+               case ( destination, session.authToken ) of
+                   ... 
+                   -- The following matches when we have authentication.
+                   ( Email, Just auth ) ->
+                       newPage emailDescriptor Email.init
+               ... 
+   ```
 
 
+## Key concepts
 
+Each page is entirely self-contained with no reference to the global hierarchy of pages.
+
+A shared `Session` type enables pages to share state across page changes.
+
+A Page's `init`, `update`, and `view` functions operate in terms of the Page's local `Model` and `Msg` types, and also receive a shared `Session`; update also returns the (optionally modified) `Session`.
+
+A Page's `Descriptor` hides the page-specific `Model` and `Msg` types behind closures, thus providing a uniform interface for `Main.elm`'s `update` and `view` functions.
+
+A `Destination` (from `Route.elm` is essentially a validated route within the SPA.)
+
+The dispatcher in `Router.elm` selects which page to go to based on both a `Destination` and any conditions you want to impose on the shared `Session`; the version here looks at whether authentication has taken place, but there's nothing that prevents you from doing something else.
+
+## What's missing or broken
+
+If a Page needs to be able to invoke global operations, it can store a request in the `Session` that `Main.elm` could look at after calling the page's `update`.  There's no example of that in here (yet), though.
+
+Bug:  If you try to reach an authenticated page without auth, you'll get sent to Login, and thereafter redirected to the page.  The current router leaves the URL at '/login', though.  It is on my queue to work this.

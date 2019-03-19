@@ -77,7 +77,7 @@ Let's say we want to add a new page type `Email`:
        | EmailMsg Email.Msg
    ```
 
-3. Edit `Descriptors.elm` to add an import and and entry for `Page.Email`:
+3. Edit `Descriptors.elm` to add an import and an entry for `Page.Email`:
    ```
    ...
    import Page.Email as Email
@@ -160,4 +160,4 @@ It is possible to refactor an existing SPA into this style.  Add this kind of wr
 
 If a Page needs to be able to invoke global operations, it can store a request in the `Session` that `Main.elm` could look at after calling the page's `update`.  There's no example of that in here (yet), though. )
 
-Bug:  If you try to reach an authenticated page without auth, you'll get sent to Login, and thereafter redirected to the page.  The current router leaves the URL at '/login', though.  It is on my queue to work this.
+Bug:  If you try to reach an authenticated page without auth, you'll get sent to `Page.Login`, and thereafter redirected to the page.  The current router leaves the URL at '/login', though.  It is on my queue to work this.

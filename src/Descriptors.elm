@@ -24,11 +24,10 @@ import Page.NotFound as NotFound
 import Page.Primary as Primary
 import Page.Secondary as Secondary
 import PageMsg exposing (PageMsg(..))
-import Route exposing (NavState)
-import Url exposing (Url)
+import Session exposing (Session)
 
 
-loginDescriptor : Descriptor PageMsg Login.Msg Login.Model
+loginDescriptor : Descriptor PageMsg Login.Msg Login.Model Session
 loginDescriptor =
     { view = Login.view
     , update = Login.update
@@ -44,7 +43,7 @@ loginDescriptor =
     }
 
 
-logoutDescriptor : Descriptor PageMsg Logout.Msg Logout.Model
+logoutDescriptor : Descriptor PageMsg Logout.Msg Logout.Model Session
 logoutDescriptor =
     { view = Logout.view
     , update = Logout.update
@@ -60,7 +59,7 @@ logoutDescriptor =
     }
 
 
-primaryDescriptor : Descriptor PageMsg Primary.Msg Primary.Model
+primaryDescriptor : Descriptor PageMsg Primary.Msg Primary.Model Session
 primaryDescriptor =
     { view = Primary.view
     , update = Primary.update
@@ -76,7 +75,7 @@ primaryDescriptor =
     }
 
 
-secondaryDescriptor : Descriptor PageMsg Secondary.Msg Secondary.Model
+secondaryDescriptor : Descriptor PageMsg Secondary.Msg Secondary.Model Session
 secondaryDescriptor =
     { view = Secondary.view
     , update = Secondary.update
@@ -92,7 +91,7 @@ secondaryDescriptor =
     }
 
 
-notFoundDescriptor : Descriptor PageMsg NotFound.Msg NotFound.Model
+notFoundDescriptor : Descriptor PageMsg NotFound.Msg NotFound.Model Session
 notFoundDescriptor =
     { view = NotFound.view
     , update = NotFound.update
@@ -108,7 +107,7 @@ notFoundDescriptor =
     }
 
 
-aboutDescriptor : Descriptor PageMsg About.Msg About.Model
+aboutDescriptor : Descriptor PageMsg About.Msg About.Model Session
 aboutDescriptor =
     { view = About.view
     , update = About.update
@@ -124,7 +123,7 @@ aboutDescriptor =
     }
 
 
-landingDescriptor : Descriptor PageMsg Landing.Msg Landing.Model
+landingDescriptor : Descriptor PageMsg Landing.Msg Landing.Model Session
 landingDescriptor =
     { view = Landing.view
     , update = Landing.update

@@ -16,7 +16,7 @@ import Session exposing (Session)
 
 type alias Model =
     { session : Session
-    , page : Page.Model PageMsg
+    , page : Page.Model PageMsg Session
     }
 
 

@@ -8,39 +8,35 @@
 module Page exposing (Descriptor, Model, init, update, view)
 
 import Browser exposing (Document)
-import Browser.Navigation as Navigation
 import Html
-import Route exposing (NavState)
-import Session exposing (Session)
-import Url
 
 
-type Model mainmsg
+type Model mainmsg session
     = Model
-        { view : Session -> Browser.Document mainmsg
-        , update : mainmsg -> Session -> ( Session, Model mainmsg, Cmd mainmsg )
+        { view : session -> Browser.Document mainmsg
+        , update : mainmsg -> session -> ( session, Model mainmsg session, Cmd mainmsg )
         }
 
 
-view : Session -> Model mainmsg -> Browser.Document mainmsg
+view : session -> Model mainmsg session -> Browser.Document mainmsg
 view session (Model model) =
     model.view session
 
 
-update : mainmsg -> Session -> Model mainmsg -> ( Session, Model mainmsg, Cmd mainmsg )
+update : mainmsg -> session -> Model mainmsg session -> ( session, Model mainmsg session, Cmd mainmsg )
 update msg session (Model model) =
     model.update msg session
 
 
-type alias Descriptor mainmsg msg model =
-    { view : Session -> model -> Document msg
-    , update : msg -> Session -> model -> ( Session, model, Cmd msg )
+type alias Descriptor mainmsg msg model session =
+    { view : session -> model -> Document msg
+    , update : msg -> session -> model -> ( session, model, Cmd msg )
     , msgWrapper : msg -> mainmsg
     , msgFilter : mainmsg -> Maybe msg
     }
 
 
-init : Descriptor mainmsg msg model -> ( Session, model, Cmd msg ) -> ( Session, Model mainmsg, Cmd mainmsg )
+init : Descriptor mainmsg msg model session -> ( session, model, Cmd msg ) -> ( session, Model mainmsg session, Cmd mainmsg )
 init descriptor ( session, pageModel, cmd ) =
     ( session
     , buildModel descriptor pageModel
@@ -48,10 +44,10 @@ init descriptor ( session, pageModel, cmd ) =
     )
 
 
-buildModel : Descriptor mainmsg msg model -> model -> Model mainmsg
+buildModel : Descriptor mainmsg msg model session -> model -> Model mainmsg session
 buildModel descriptor newModel =
     let
-        buildView : Session -> Document mainmsg
+        buildView : session -> Document mainmsg
         buildView =
             \session ->
                 let
@@ -60,7 +56,7 @@ buildModel descriptor newModel =
                 in
                 { title = title, body = List.map (Html.map descriptor.msgWrapper) body }
 
-        buildUpdate : mainmsg -> Session -> ( Session, Model mainmsg, Cmd mainmsg )
+        buildUpdate : mainmsg -> session -> ( session, Model mainmsg session, Cmd mainmsg )
         buildUpdate =
             newUpdate descriptor newModel
     in
@@ -70,7 +66,7 @@ buildModel descriptor newModel =
         }
 
 
-newUpdate : Descriptor mainmsg msg model -> model -> mainmsg -> Session -> ( Session, Model mainmsg, Cmd mainmsg )
+newUpdate : Descriptor mainmsg msg model session -> model -> mainmsg -> session -> ( session, Model mainmsg session, Cmd mainmsg )
 newUpdate descriptor oldModel mainMsg oldSession =
     case descriptor.msgFilter mainMsg of
         Just msg ->

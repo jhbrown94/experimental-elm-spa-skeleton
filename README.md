@@ -30,7 +30,7 @@ Let's say we want to add a new page type `Email`:
 1. Create `src/Page/Email.elm` using this template:
    ```
    
-   module Page.Email exposing (Model, Msg, init, update, view)
+   module Page.Email exposing (Model, Msg, init, subscriptions, update, view, wrapSessionEvent)
    
    import Browser exposing (Document)
    import Route
@@ -42,6 +42,8 @@ Let's say we want to add a new page type `Email`:
    
    type Msg
        = YourFirstMessage
+       | SubscriptionMsg -- customize this for your subscriptions, if any; or remove
+       | SessionEventMsg Session.Event -- remove this if you're not listening to Session events
        | ...
    
    
@@ -61,6 +63,15 @@ Let's say we want to add a new page type `Email`:
        case msg of
          YourFirstMessage -> your handler here
          ...
+
+   -- This is optional, only implement it if you need it. 
+   subscriptions session model =
+      yourSubsHere <| SubscriptionMsg
+
+   -- This is optional, only implement it if you need it. 
+   -- Read more about this in the Sessions section of the README
+   wrapSessionEvent event =
+      SessionEventMsg event
    ```
 
   Note: To standardize some of the other boilerplate, even if you don't need a `Model` or `Msg`, define them as aliases of `()`, e.g. `type alias Model = ()`.
@@ -87,6 +98,8 @@ Let's say we want to add a new page type `Email`:
    emailDescriptor =
        { view = Email.view
        , update = Email.update
+       , subscriptions = Just Email.subscriptions -- or Nothing if you don't need it
+       , wrapSessionEvent = Just Email.wrapSessionEvent -- or Nothing if you don't need it
        , msgWrapper = EmailMsg
        , msgFilter =
            \main ->
@@ -98,6 +111,7 @@ Let's say we want to add a new page type `Email`:
                        Nothing
        }
    ```
+
 
 4. Edit `Route.elm` to add a Destination for the new page, and to handle converting between URLs and the destination:
    ```
@@ -128,8 +142,8 @@ Let's say we want to add a new page type `Email`:
    route url ({ session, page } as model) =
        let
            ...
-           byDestination destination =
-               case ( destination, session.authToken ) of
+         byDestination destination =
+            case ( destination, newSession |> Session.getAuthToken ) of
                    ... 
                    -- The following matches when we have authentication.
                    ( Email, Just auth ) ->
@@ -144,20 +158,23 @@ Each page is entirely self-contained with no reference to the global hierarchy o
 
 A `Destination`  is essentially a validated route within the SPA.  `Route.elm` doesn't contain references to the global page hierarchy.
 
-A shared `Session` type enables pages to share state across page changes.  `Session.elm` doesn't contain references to the global page hierarchy.
+A shared `Session` type enables pages to share state across page changes.  `Session` is interesting enough that it gets the next section below for more exposition.
 
-A Page's `init`, `update`, and `view` functions operate in terms of the Page's local `Model` and `Msg` types, and also receive a shared `Session`; update also returns the (optionally modified) `Session`.
+A Page's `init`, `update`,  `view`, and optional `subscription` functions operate in terms of the Page's local `Model` and `Msg` types, and also receive a shared `Session`; update also returns the (optionally modified) `Session`.
 
 A Page's `Descriptor` hides the page-specific `Model` and `Msg` types behind closures, thus providing a uniform interface for `Main.elm`'s `update` and `view` functions.
 
 The dispatcher in `Router.elm` selects which page to go to based on both a `Destination` and any conditions you want to impose on the shared `Session`; the version here looks at whether authentication has taken place, but there's nothing that prevents you from doing something else.
 
+## Session
+
+`Session` provides a place to hang your global state.  It also provides a central point for performing global operations.  For instance, all URL-changing navigation operations happen using `Session.navPush`, `Session.navReplace`, and `Session.navBack`.  `Session.update` handlers may return a `Session.Event`, and pages which have a non-Nothing `wrapSessionEvent` entry in their `Descriptor` will receive those events.  (The example code checked in now doesn't demonstrate this, unfortunately -- I use it to announce updates when global information comes back from a server and a page might want to trigger new commands in response.)
+
+
 ## Refactoring an existing SPA into this style
 
-It is possible to refactor an existing SPA into this style.  Add this kind of wrapped page as a single page, and then migrate individual pages into this style and out of your `Main.elm` case statements.
+It is possible to refactor an existing SPA into this style.  Add this kind of wrapped page as a single page, and then migrate individual pages into this style and out of your `Main.elm` case statements.  Similarly, move your global state into `Session` as you are able.
 
 ## What's missing or broken
-
-If a Page needs to be able to invoke global operations, it can store a request in the `Session` that `Main.elm` could look at after calling the page's `update`.  There's no example of that in here (yet), though. )
 
 Bug:  If you try to reach an authenticated page without auth, you'll get sent to `Page.Login`, and thereafter redirected to the page.  The current router leaves the URL at '/login', though.  It is on my queue to work this.

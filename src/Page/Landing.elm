@@ -53,7 +53,7 @@ update : Msg -> Session -> Model -> ( Session, Model, Cmd Msg )
 update msg session model =
     case msg of
         LoginPressed ->
-            ( session, model, Route.push (Route.Login Nothing) session.nav )
+            ( session |> Session.navPush (Route.Login Nothing), model, Cmd.none )
 
         AboutPressed ->
-            ( session, model, Route.push Route.About session.nav )
+            ( session |> Session.navPush Route.About, model, Cmd.none )

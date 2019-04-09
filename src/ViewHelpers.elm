@@ -55,7 +55,7 @@ aboutButton msg =
 
 
 logoutButton msg session =
-    if session.authToken == Nothing then
+    if Session.getAuthToken session == Nothing then
         Element.none
 
     else

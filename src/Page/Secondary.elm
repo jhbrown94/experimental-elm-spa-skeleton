@@ -43,7 +43,7 @@ view session model =
             wrappedRow
                 [ spacing 10 ]
                 [ text "This is a secondary page"
-                , text <| "Session user's authtoken is: " ++ Debug.toString session.authToken
+                , text <| "Session user's authtoken is: " ++ (Session.getAuthToken session |> Maybe.withDefault "NO TOKEN")
                 , button [] { onPress = Just PrimaryPressed, label = text "Primary" }
                 , aboutButton AboutPressed
                 , logoutButton LogoutPressed session
@@ -57,13 +57,13 @@ update : Msg -> Session -> Model -> ( Session, Model, Cmd Msg )
 update msg session model =
     case msg of
         PrimaryPressed ->
-            ( session, model, Route.push Route.Root session.nav )
+            ( session |> Session.navPush Route.Root, model, Cmd.none )
 
         LoginPressed ->
-            ( session, model, Route.push (Route.Login Nothing) session.nav )
+            ( session |> Session.navPush (Route.Login Nothing), model, Cmd.none )
 
         LogoutPressed ->
-            ( session, model, Route.push Route.Logout session.nav )
+            ( session |> Session.navPush Route.Logout, model, Cmd.none )
 
         AboutPressed ->
-            ( session, model, Route.push Route.About session.nav )
+            ( session |> Session.navPush Route.About, model, Cmd.none )

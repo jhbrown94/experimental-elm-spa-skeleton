@@ -9,13 +9,15 @@ module Main exposing (main)
 
 import Browser exposing (Document, UrlRequest(..))
 import Browser.Navigation as Navigation
+import Data
 import Descriptors exposing (landingDescriptor)
 import Html
-import Model exposing (Model, wrapPage)
+import Json.Decode as Decode
+import Model exposing (Model)
 import Msg exposing (..)
 import Page as Page
 import Page.Landing as Landing
-import Route exposing (Destination(..), NavState)
+import Route exposing (Destination(..))
 import Router
 import Session exposing (Session)
 import Url exposing (Url)
@@ -36,23 +38,17 @@ type alias Flags =
     ()
 
 
-init : Flags -> Url -> Navigation.Key -> ( Model, Cmd Msg )
-init flags url key =
+init : Decode.Value -> Url -> Navigation.Key -> ( Model, Cmd Msg )
+init jsonFlags url key =
     let
-        nav =
-            { key = key, url = url }
-
-        session : Session
         session =
-            { nav = nav, authToken = Nothing }
-
-        ( initialModel, _ ) =
-            session
-                |> Landing.init
-                |> Page.init landingDescriptor
-                |> wrapPage nav
+            Session.init key url Nothing
     in
-    Router.route url initialModel
+    session
+        |> Router.route url
+        |> Model.wrapPage
+        |> (\( m, c ) -> ( m, c, Nothing ))
+        |> runSessionCommands
 
 
 view : Model -> Document Msg
@@ -64,28 +60,72 @@ view { session, page } =
     { title = title, body = body |> List.map (Html.map Page) }
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg ({ session, page } as model) =
+mainUpdate : Msg -> Model -> ( Model, Cmd Msg, Maybe Session.Event )
+mainUpdate msg ({ session, page } as model) =
     case msg of
         NoEvent ->
-            ( model, Cmd.none )
+            ( model, Cmd.none, Nothing )
 
         UrlRequested (Internal url) ->
-            ( model, Navigation.pushUrl session.nav.key (Url.toString url) )
+            ( { model
+                | session =
+                    model.session
+                        |> Session.navPushUrl (Url.toString url)
+              }
+            , Cmd.none
+            , Nothing
+            )
 
         UrlRequested (External urlString) ->
-            ( model, Navigation.load urlString )
+            ( model, Navigation.load urlString, Nothing )
 
         UrlChanged url ->
-            Router.route url model
+            session |> Router.route url |> Model.wrapPage |> (\( m, c ) -> ( m, c, Nothing ))
 
         Page pageMsg ->
-            Page.update pageMsg session page |> wrapPage session
+            Page.update pageMsg session page |> Model.wrapPage |> (\( m, c ) -> ( m, c, Nothing ))
+
+        Session sessionMsg ->
+            let
+                ( newSession, sessionEvent ) =
+                    Session.update sessionMsg model.session
+            in
+            ( { model | session = newSession }, Cmd.none, sessionEvent )
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    mainUpdate msg model
+        |> runSessionCommands
+
+
+runSessionCommands ( model, cmds, sessionEvent ) =
+    let
+        ( cleanSession, sessionCmds ) =
+            Session.popCmd model.session
+
+        newModel =
+            { model | session = cleanSession }
+
+        newCmds =
+            Cmd.batch [ cmds, Cmd.map Msg.Session sessionCmds ]
+    in
+    sessionEvent
+        |> Maybe.andThen (\event -> Page.wrapSessionEvent event model.page)
+        |> Maybe.map
+            (\m ->
+                let
+                    ( recModel, recCmds ) =
+                        update (Msg.Page m) newModel
+                in
+                ( recModel, Cmd.batch [ newCmds, recCmds ] )
+            )
+        |> Maybe.withDefault ( newModel, newCmds )
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    Page.subscriptions model.session model.page |> Sub.map Msg.Page
 
 
 onUrlRequest : Browser.UrlRequest -> Msg

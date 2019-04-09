@@ -65,15 +65,15 @@ init successUrl session =
                 |> Maybe.map Route.parseUrl
                 |> Maybe.withDefault Route.Root
 
-        cmd =
-            case session.authToken of
+        newSession =
+            case Session.getAuthToken session of
                 Nothing ->
-                    Cmd.none
+                    session
 
                 Just _ ->
-                    Route.replace destination session.nav
+                    session |> Session.navReplace destination
     in
-    ( session, { initModel | destination = destination }, cmd )
+    ( newSession, { initModel | destination = destination }, Cmd.none )
 
 
 update : Msg -> Session -> Model -> ( Session, Model, Cmd Msg )
@@ -86,13 +86,15 @@ update msg session model =
             ( session, { model | rawPassword = password }, Cmd.none )
 
         LoginPressed ->
-            ( { session | authToken = Just model.username }
+            ( session
+                |> Session.addAuthToken model.username
+                |> Session.navReplace model.destination
             , model
-            , Route.replace model.destination session.nav
+            , Cmd.none
             )
 
         CancelPressed ->
-            ( session, model, Navigation.back session.nav.key 1 )
+            ( session |> Session.navBack, model, Cmd.none )
 
 
 view : Session -> Model -> Document Msg

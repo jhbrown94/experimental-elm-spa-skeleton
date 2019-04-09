@@ -20,68 +20,57 @@ import Page.Primary as Primary
 import Page.Secondary as Secondary
 import PageMsg exposing (..)
 import Route exposing (..)
+import Session exposing (Session)
 import Url exposing (Url)
 
 
-setNav newValue record =
-    { record | nav = newValue }
-
-
-setUrl newValue record =
-    { record | url = newValue }
-
-
-route : Url -> Model -> ( Model, Cmd Msg )
-route url ({ session, page } as model) =
+route : Url -> Session -> ( Session, Page.Model PageMsg, Cmd PageMsg )
+route url session =
     let
         nominalDestination =
             Route.parseUrl url
 
         newSession =
-            session |> setNav (session.nav |> setUrl url)
-
-        newPage descriptor generator =
-            newSession
-                |> generator
-                |> Page.init descriptor
-                |> wrapPage newSession
+            session |> Session.setUrl url
 
         byDestination destination =
-            case ( destination, session.authToken ) of
+            case ( destination, newSession |> Session.getAuthToken ) of
                 ( Root, Nothing ) ->
-                    newPage landingDescriptor Landing.init
+                    newSession
+                        |> Landing.init
+                        |> Page.init landingDescriptor
 
                 ( Root, Just _ ) ->
-                    newPage primaryDescriptor Primary.init
+                    newSession |> Primary.init |> Page.init primaryDescriptor
 
                 ( About, _ ) ->
-                    newPage aboutDescriptor About.init
+                    newSession |> About.init |> Page.init aboutDescriptor
 
                 ( NotFound _, _ ) ->
-                    newPage notFoundDescriptor (NotFound.init (Url.toString url))
+                    newSession |> NotFound.init (Url.toString url) |> Page.init notFoundDescriptor
 
                 ( Logout, _ ) ->
-                    newPage logoutDescriptor Logout.init
+                    newSession |> Logout.init |> Page.init logoutDescriptor
 
                 ( Secondary, Just _ ) ->
-                    newPage secondaryDescriptor Secondary.init
+                    newSession |> Secondary.init |> Page.init secondaryDescriptor
 
                 ( Login successUrl, Nothing ) ->
-                    newPage loginDescriptor <| Login.init successUrl
+                    newSession |> Login.init successUrl |> Page.init loginDescriptor
 
                 ( Login Nothing, Just _ ) ->
-                    newPage primaryDescriptor Primary.init
+                    newSession |> Primary.init |> Page.init primaryDescriptor
 
                 ( Login (Just urlString), Just _ ) ->
                     case urlString |> Url.fromString of
                         Just successUrl ->
-                            route successUrl model
+                            route successUrl newSession
 
                         Nothing ->
-                            newPage primaryDescriptor Primary.init
+                            newSession |> Primary.init |> Page.init primaryDescriptor
 
                 -- Catch-all to redirect session-required pages to Login if no session is present
                 ( _, Nothing ) ->
-                    newPage loginDescriptor <| Login.init (Just (Url.toString url))
+                    newSession |> Login.init (Just (Url.toString url)) |> Page.init loginDescriptor
     in
     byDestination nominalDestination

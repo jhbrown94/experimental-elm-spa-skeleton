@@ -51,4 +51,4 @@ update : Msg -> Session -> Model -> ( Session, Model, Cmd Msg )
 update msg session model =
     case msg of
         HomePressed ->
-            ( session, model, Route.push Route.Root session.nav )
+            ( session |> Session.navPush Route.Root, model, Cmd.none )

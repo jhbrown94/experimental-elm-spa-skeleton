@@ -15,6 +15,7 @@ module Descriptors exposing
     , secondaryDescriptor
     )
 
+import Browser exposing (Document)
 import Page exposing (Descriptor)
 import Page.About as About
 import Page.Landing as Landing
@@ -27,10 +28,12 @@ import PageMsg exposing (PageMsg(..))
 import Session exposing (Session)
 
 
-loginDescriptor : Descriptor PageMsg Login.Msg Login.Model Session
+loginDescriptor : Descriptor PageMsg Login.Msg Login.Model
 loginDescriptor =
     { view = Login.view
     , update = Login.update
+    , subscriptions = Nothing
+    , wrapSessionEvent = Nothing
     , msgWrapper = LoginMsg
     , msgFilter =
         \main ->
@@ -43,10 +46,11 @@ loginDescriptor =
     }
 
 
-logoutDescriptor : Descriptor PageMsg Logout.Msg Logout.Model Session
+logoutDescriptor : Descriptor PageMsg Logout.Msg Logout.Model
 logoutDescriptor =
     { view = Logout.view
     , update = Logout.update
+    , subscriptions = Nothing
     , msgWrapper = LogoutMsg
     , msgFilter =
         \main ->
@@ -56,13 +60,15 @@ logoutDescriptor =
 
                 _ ->
                     Nothing
+    , wrapSessionEvent = Nothing
     }
 
 
-primaryDescriptor : Descriptor PageMsg Primary.Msg Primary.Model Session
+primaryDescriptor : Descriptor PageMsg Primary.Msg Primary.Model
 primaryDescriptor =
     { view = Primary.view
     , update = Primary.update
+    , subscriptions = Nothing
     , msgWrapper = PrimaryMsg
     , msgFilter =
         \main ->
@@ -72,13 +78,15 @@ primaryDescriptor =
 
                 _ ->
                     Nothing
+    , wrapSessionEvent = Nothing
     }
 
 
-secondaryDescriptor : Descriptor PageMsg Secondary.Msg Secondary.Model Session
+secondaryDescriptor : Descriptor PageMsg Secondary.Msg Secondary.Model
 secondaryDescriptor =
     { view = Secondary.view
     , update = Secondary.update
+    , subscriptions = Nothing
     , msgWrapper = SecondaryMsg
     , msgFilter =
         \main ->
@@ -88,13 +96,15 @@ secondaryDescriptor =
 
                 _ ->
                     Nothing
+    , wrapSessionEvent = Nothing
     }
 
 
-notFoundDescriptor : Descriptor PageMsg NotFound.Msg NotFound.Model Session
+notFoundDescriptor : Descriptor PageMsg NotFound.Msg NotFound.Model
 notFoundDescriptor =
     { view = NotFound.view
     , update = NotFound.update
+    , subscriptions = Nothing
     , msgWrapper = NotFoundMsg
     , msgFilter =
         \main ->
@@ -104,13 +114,15 @@ notFoundDescriptor =
 
                 _ ->
                     Nothing
+    , wrapSessionEvent = Nothing
     }
 
 
-aboutDescriptor : Descriptor PageMsg About.Msg About.Model Session
+aboutDescriptor : Descriptor PageMsg About.Msg About.Model
 aboutDescriptor =
     { view = About.view
     , update = About.update
+    , subscriptions = Nothing
     , msgWrapper = AboutMsg
     , msgFilter =
         \main ->
@@ -120,13 +132,15 @@ aboutDescriptor =
 
                 _ ->
                     Nothing
+    , wrapSessionEvent = Nothing
     }
 
 
-landingDescriptor : Descriptor PageMsg Landing.Msg Landing.Model Session
+landingDescriptor : Descriptor PageMsg Landing.Msg Landing.Model
 landingDescriptor =
     { view = Landing.view
     , update = Landing.update
+    , subscriptions = Nothing
     , msgWrapper = LandingMsg
     , msgFilter =
         \main ->
@@ -136,4 +150,5 @@ landingDescriptor =
 
                 _ ->
                     Nothing
+    , wrapSessionEvent = Nothing
     }

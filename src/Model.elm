@@ -7,18 +7,17 @@
 
 module Model exposing (Model, wrapPage)
 
-import Msg exposing (Msg(..))
+import Msg
 import Page
 import PageMsg exposing (PageMsg)
-import Route exposing (NavState)
 import Session exposing (Session)
 
 
 type alias Model =
     { session : Session
-    , page : Page.Model PageMsg Session
+    , page : Page.Model PageMsg
     }
 
 
-wrapPage nav ( session, pageModel, cmd ) =
-    ( Model session pageModel, Cmd.map Page cmd )
+wrapPage ( session, pageModel, cmd ) =
+    ( Model session pageModel, Cmd.map Msg.Page cmd )

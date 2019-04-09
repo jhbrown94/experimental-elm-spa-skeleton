@@ -41,7 +41,7 @@ view session model =
         [ dialogPage <|
             column
                 [ spacing 10 ]
-                [ text <| "Auth token is: " ++ Debug.toString session.authToken
+                [ text <| "Auth token is: " ++ (Session.getAuthToken session |> Maybe.withDefault "NO TOKEN")
                 , text "This is a primary page"
                 , button [] { onPress = Just SecondaryPressed, label = text "Secondary" }
                 , aboutButton AboutPressed
@@ -55,10 +55,10 @@ update : Msg -> Session -> Model -> ( Session, Model, Cmd Msg )
 update msg session model =
     case msg of
         LogoutPressed ->
-            ( session, model, Route.push Route.Logout session.nav )
+            ( session |> Session.navPush Route.Logout, model, Cmd.none )
 
         AboutPressed ->
-            ( session, model, Route.push Route.About session.nav )
+            ( session |> Session.navPush Route.About, model, Cmd.none )
 
         SecondaryPressed ->
-            ( session, model, Route.push Route.Secondary session.nav )
+            ( session |> Session.navPush Route.Secondary, model, Cmd.none )

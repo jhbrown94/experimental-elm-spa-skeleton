@@ -29,7 +29,7 @@ type Msg
 
 init : Session -> ( Session, Model, Cmd Msg )
 init session =
-    ( { session | authToken = Nothing }, (), Cmd.none )
+    ( session |> Session.clearAuthToken, (), Cmd.none )
 
 
 view : Session -> Model -> Document Msg
@@ -50,4 +50,4 @@ update : Msg -> Session -> Model -> ( Session, Model, Cmd Msg )
 update msg session model =
     case msg of
         HomePressed ->
-            ( session, model, Route.push Route.Root session.nav )
+            ( session |> Session.navPush Route.Root, model, Cmd.none )

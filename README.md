@@ -1,10 +1,16 @@
 # Experimental Elm SPA skeleton
 
-This is an experimental approach to implementing an SPA in (pure) Elm.   My principal goal was to let pages be self-contained.  If you like it, you can copy it and use it as a baseline for your own SPA, it's pretty straightforward.
+This is an experimental approach to implementing an SPA in (pure) Elm.   My principal goal was to let pages be self-contained.  If you like it, you can copy it and use it as a baseline for your own SPA, it's pretty straightforward.  
 
 It's a work in progress.  If it's interesting to you, please let me know.  If there's enthusiasm for this project, I'll do a lot more documenting and general cleanup and usability improvements.  (E.g. I've written this README, but I haven't documented the individual files yet, and probably won't if there isn't at least some external interest.)
 
 Something not to worry about:  I've used `elm-ui` for the `view` functions in the skeleton.  There's no fundamental dependency on `elm-ui`; you can use `html` or whatever else you want to generate views.  I just like `elm-ui` a lot better than the alternatives.
+
+## Warnings
+
+1. While I'm still feeling my way forward, I will push breaking changes at my whimsy, so if you want stability (or even niceties like a version number) this is probably not the platform for you.
+
+2. The Elm debugger can't presently visualize closures, so using this skeleton will leave your top-level model pretty opaque in the debugger.  (On the other hand, building with --debug is broken in many cases anyhow right now.)  I hope that perhaps closures will become less opaque to the debugger in the future.
 
 ## Major influences
 

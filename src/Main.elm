@@ -35,14 +35,24 @@ main =
 
 
 type alias Flags =
-    ()
+    { authToken : Maybe Data.Token }
+
+
+flagDecoder =
+    Decode.map Flags <| Decode.field "authToken" Data.tokenDecoder
 
 
 init : Decode.Value -> Url -> Navigation.Key -> ( Model, Cmd Msg )
 init jsonFlags url key =
     let
+        flags : Flags
+        flags =
+            jsonFlags
+                |> Decode.decodeValue flagDecoder
+                |> Result.withDefault { authToken = Nothing }
+
         session =
-            Session.init key url Nothing
+            Session.init key url flags.authToken
     in
     session
         |> Router.route url

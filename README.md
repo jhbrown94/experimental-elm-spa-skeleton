@@ -25,9 +25,19 @@ This skeleton is particularly influenced by these Elm codebases:
 
 This isn't packaged as an Elm package, so use `git clone` to get this repo.  
 
-You can run it with `elm reactor` -- navigate to `src/Main.elm`.  Because the reactor URL is not recognizable to the SPA, you'll get a "Not found" page in the SPA -- click the button to get back to the root and explore the app.
+To compile this yourself, run `elm make src/Main.elm --output main.js`.  Then you have a few options to play with it:
 
-To compile this yourself, run `elm make src/Main.elm`.   If you host it on a webserver and redirect all URLs to the app, you can play with how it responds to hand-typed URLs. (Note that there's no session persistence, so you'll have to "log in" after every browser page load.)
+1) You can visit with `elm reactor` -- browse to Main.elm.  Because the reactor URL is not recognizable to the SPA, you'll get a "Not found" page in the SPA -- click the button to get back to the root and explore the app.  (Also, you won't get proper session persistence because ports will silently fail.)
+
+2) Fire up a simple webserver and view index.html directly.  One simple option:
+```
+ npm install http-server -g
+ http-server 
+```
+
+You'll get session persistence here.  However, if you hand-type a URL or hit browser reload on any page other than the root, you'll wind up with a not-found from the server.
+
+3) Configure a webserver to redirect all URLs to the app.  Now you can play with how it responds to hand-typed URLs. 
 
 
 ## Example: Adding a page

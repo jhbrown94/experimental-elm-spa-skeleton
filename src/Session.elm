@@ -26,6 +26,7 @@ module Session exposing
 import Browser.Navigation as Navigation
 import Data
 import Json.Decode exposing (Value)
+import Ports
 import Route exposing (Destination, urlFor)
 import Url exposing (Url)
 import Url.Builder as Builder
@@ -74,6 +75,7 @@ getAuthToken (Session session) =
 
 addAuthToken token (Session session) =
     { session | authToken = Just token }
+        |> addCmd (Ports.storeToken token)
         |> Session
 
 
@@ -82,7 +84,7 @@ navBack (Session session) =
 
 
 clearAuthToken (Session session) =
-    Session { session | authToken = Nothing }
+    Session ({ session | authToken = Nothing } |> addCmd (Ports.clearToken ()))
 
 
 addCmd : Cmd Msg -> Rep -> Rep

@@ -8,4 +8,4 @@ type alias Token =
 
 
 tokenDecoder =
-    string
+    nullable string
